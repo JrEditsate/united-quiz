@@ -171,7 +171,9 @@ footer{border-top:1px solid var(--line);padding:22px;text-align:center;color:#77
   <section class="entry">
     <h2>ورود به رقابت</h2>
     <div class="muted">نامت را وارد کن. زمان با شروع آزمون محاسبه می‌شود و پس از عبور از هر سؤال امکان بازگشت وجود ندارد.</div>
-    <input id="playerName" class="name-input" maxlength="30" autocomplete="name" placeholder="نام و نام خانوادگی">
+    <input id="firstName" class="name-input" maxlength="30" autocomplete="given-name" placeholder="نام" aria-label="نام">
+    <input id="lastName" class="name-input" maxlength="30" autocomplete="family-name" placeholder="نام خانوادگی" aria-label="نام خانوادگی">
+    <input id="rubikaId" class="name-input" maxlength="50" placeholder="آیدی روبیکا (بدون @)" aria-label="آیدی روبیکا">
     <button id="startBtn" class="btn full">ورود به میدان <span>←</span></button>
     <div class="entry-stats">
       <div class="entry-stat"><b>۴۰</b><small>سؤال مسابقه</small></div>
@@ -182,8 +184,12 @@ footer{border-top:1px solid var(--line);padding:22px;text-align:center;color:#77
   </section>
 
   <section class="leader-section">
-    <div class="section-title"><h2>TOP THREE</h2><p>سه نفر برتر مرحله اول</p></div>
+    <div class="section-title"><h2>TOP FIVE</h2><p>پنج نفر برتر مسابقه</p></div>
     <div class="board" id="homeBoard"><div class="empty">در حال دریافت جدول امتیازات...</div></div>
+  </section>
+  <section id="answerKeySection" class="leader-section" style="display:none">
+    <div class="section-title"><h2>ANSWER KEY</h2><p>پاسخ‌نامه رسمی پس از پایان مسابقه</p></div>
+    <div class="board" id="answerKeyBoard"><div class="empty">در حال دریافت پاسخ‌نامه...</div></div>
   </section>
 </section>
 
@@ -204,7 +210,7 @@ footer{border-top:1px solid var(--line);padding:22px;text-align:center;color:#77
       <div class="answers" id="answers"></div>
       <div class="feedback" id="feedback">یک گزینه را انتخاب کن.</div>
     </div>
-    <div class="warning">پس از ثبت پاسخ یا پایان زمان، به سؤال بعدی می‌روی و بازگشت ممکن نیست.</div>
+    <div class="warning">پاسخ ثبت‌شده قابل تغییر نیست؛ پس از هر سؤال مستقیماً به سؤال بعدی می‌روی.</div>
   </div>
 </section>
 
@@ -212,7 +218,7 @@ footer{border-top:1px solid var(--line);padding:22px;text-align:center;color:#77
   <div class="result">
     <div class="result-top">
       <div class="cup">🏆</div>
-      <div class="kicker" style="justify-content:center">STAGE 01 • COMPLETED</div>
+      <div class="kicker" style="justify-content:center">UNITED QUIZ • COMPLETED</div>
       <h1>مسابقه تمام شد</h1>
       <div class="total" id="finalScore">۰</div>
       <div class="muted">امتیاز از ۴۰۰</div>
@@ -225,7 +231,7 @@ footer{border-top:1px solid var(--line);padding:22px;text-align:center;color:#77
       </div>
       <div id="saveStatus" class="status">در حال ثبت نتیجه...</div>
     </div>
-    <div class="section-title" style="margin-top:40px"><h2>LEADERBOARD</h2><p>سه نفر برتر مرحله اول</p></div>
+    <div class="section-title" style="margin-top:40px"><h2>LEADERBOARD</h2><p>پنج نفر برتر مسابقه</p></div>
     <div class="board" id="resultBoard"><div class="empty">در حال بارگذاری...</div></div>
     <button class="btn full" style="margin-top:20px" onclick="location.reload()">بازگشت به صفحه اصلی</button>
   </div>
@@ -234,158 +240,29 @@ footer{border-top:1px solid var(--line);padding:22px;text-align:center;color:#77
 <footer>UNITED QUIZ • A TRIBUTE TO THE RED DEVILS</footer>
 
 <script>
-// اطلاعات اتصال پروژه Supabase
 const SUPABASE_URL = "https://aqhodhxpqhllwczwqdgt.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_TE36EGDwiz3dv6YGO1IclA_EF9sCGeA";
-
-const client = window.supabase && !SUPABASE_ANON_KEY.includes("PASTE_")
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
-
-const QUESTIONS = [
-{q:"باشگاه منچستریونایتد در ابتدا با چه نامی تأسیس شد؟",o:["لیورپول","نیوتون هیث","منچستر سیتی","یونایتد منچستر"],a:1},
-{q:"باشگاه منچستریونایتد در چه سالی نام خود را تغییر داد؟",o:["۱۸۷۸","۱۸۹۲","۱۹۰۲","۱۹۱۰"],a:2},
-{q:"ورزشگاه خانگی منچستریونایتد چه نام دارد؟",o:["آنفیلد","امارات","اولدترافورد","ومبلی"],a:2},
-{q:"اولدترافورد در چه سالی افتتاح شد؟",o:["۱۹۰۲","۱۹۱۰","۱۹۲۰","۱۹۵۸"],a:1},
-{q:"لقب معروف منچستریونایتد چیست؟",o:["آبی‌ها","قرمزهای شیطان","عقاب‌ها","شیرها"],a:1},
-{q:"سر الکس فرگوسن در چه سالی سرمربی منچستریونایتد شد؟",o:["۱۹۸۶","۱۹۹۰","۱۹۹۵","۲۰۰۰"],a:0},
-{q:"منچستریونایتد در فینال لیگ قهرمانان ۱۹۹۹ مقابل کدام تیم پیروز شد؟",o:["رئال مادرید","بایرن مونیخ","بارسلونا","یوونتوس"],a:1},
-{q:"گل پیروزی منچستریونایتد در فینال ۱۹۹۹ را چه کسی به ثمر رساند؟",o:["دیوید بکام","پل اسکولز","تدی شرینگهام","اوله گونار سولشر"],a:3},
-{q:"فینال لیگ قهرمانان ۱۹۹۹ در کدام ورزشگاه برگزار شد؟",o:["سن‌سیرو","کمپ نو","اولدترافورد","ومبلی"],a:1},
-{q:"منچستریونایتد در فصل ۱۹۹۸–۹۹ چه افتخار بزرگی کسب کرد؟",o:["دوگانه","سه‌گانه","چهارگانه","قهرمانی جام جهانی"],a:1},
-{q:"کدام بازیکن رکورددار بیشترین بازی برای منچستریونایتد است؟",o:["پل اسکولز","رایان گیگز","دیوید بکام","وین رونی"],a:1},
-{q:"بهترین گلزن تاریخ منچستریونایتد کدام بازیکن است؟",o:["کریستیانو رونالدو","وین رونی","سر بابی چارلتون","دنیس لاو"],a:1},
-{q:"شماره پیراهن مشهور اریک کانتونا در یونایتد چه بود؟",o:["۷","۹","۱۰","۱۱"],a:0},
-{q:"کریستیانو رونالدو در نخستین دوره حضورش در یونایتد بیشتر با کدام شماره شناخته شد؟",o:["۷","۹","۱۰","۱۷"],a:0},
-{q:"منچستریونایتد نخستین قهرمانی خود در جام باشگاه‌های اروپا را در چه سالی به دست آورد؟",o:["۱۹۵۸","۱۹۶۸","۱۹۷۸","۱۹۹۹"],a:1},
-{q:"حریف منچستریونایتد در فینال جام باشگاه‌های اروپا ۱۹۶۸ چه تیمی بود؟",o:["بنفیکا","آژاکس","اینتر","رئال مادرید"],a:0},
-{q:"سر الکس فرگوسن در چه سالی بازنشستگی خود را اعلام کرد؟",o:["۲۰۱۰","۲۰۱۱","۲۰۱۳","۲۰۱۵"],a:2},
-{q:"فاجعه هوایی مونیخ در چه سالی رخ داد؟",o:["۱۹۴۸","۱۹۵۸","۱۹۶۸","۱۹۷۸"],a:1},
-{q:"کدام دروازه‌بان در قهرمانی لیگ قهرمانان ۲۰۰۸ یونایتد نقش مهمی داشت؟",o:["دیوید دخیا","ادوین فن‌درسار","پیتر اشمایکل","فابیان بارتز"],a:1},
-{q:"فینال لیگ قهرمانان ۲۰۰۸ در کدام شهر برگزار شد؟",o:["لندن","پاریس","مسکو","رم"],a:2},
-{q:"منچستریونایتد در فینال لیگ قهرمانان ۲۰۰۸ مقابل کدام تیم پیروز شد؟",o:["بارسلونا","چلسی","لیورپول","آرسنال"],a:1},
-{q:"کدام بازیکن در فینال ۲۰۰۸ پنالتی سرنوشت‌ساز چلسی را مهار کرد؟",o:["ادوین فن‌درسار","نمانیا ویدیچ","ریو فردیناند","پاتریس اورا"],a:0},
-{q:"کدام بازیکن به لقب ماشین گلزنی هلندی در یونایتد معروف بود؟",o:["روبین فن‌پرسی","رود فن‌نیستلروی","دنیس برگکمپ","آرین روبن"],a:1},
-{q:"وین رونی در منچستریونایتد بیشتر با کدام شماره شناخته می‌شود؟",o:["۷","۸","۹","۱۰"],a:3},
-{q:"کدام بازیکن انگلیسی به ضربات آزاد و پاس‌های دقیق معروف بود؟",o:["دیوید بکام","گری نویل","مایکل اوون","اشلی یانگ"],a:0},
-{q:"کدام دو بازیکن زوج دفاع مرکزی مشهور یونایتد بودند؟",o:["رونی و گیگز","فردیناند و ویدیچ","بکام و اسکولز","اِورا و نویل"],a:1},
-{q:"آخرین قهرمانی منچستریونایتد در لیگ برتر انگلیس تا سال ۲۰۲۶ در چه سالی بود؟",o:["۲۰۱۱","۲۰۱۳","۲۰۱۶","۲۰۱۸"],a:1},
-{q:"سر الکس فرگوسن در چه سالی بازنشستگی خود را اعلام کرد؟",o:["۲۰۱۰","۲۰۱۱","۲۰۱۳","۲۰۱۵"],a:2},
-{q:"منچستریونایتد در فینال لیگ اروپا ۲۰۱۷ مقابل کدام تیم پیروز شد؟",o:["آژاکس","سلتاویگو","سویا","لیون"],a:0},
-{q:"سرمربی منچستریونایتد هنگام قهرمانی لیگ اروپا در سال ۲۰۱۷ چه کسی بود؟",o:["لوئیس فن‌خال","ژوزه مورینیو","اوله سولشر","دیوید مویس"],a:1},
-{q:"کدام بازیکن در فینال جام حذفی ۲۰۲۴ مقابل منچسترسیتی گلزنی کرد؟",o:["مارکوس رشفورد","الخاندرو گارناچو","برونو فرناندز","کاسمیرو"],a:1},
-{q:"منچستریونایتد در فینال جام حذفی ۲۰۲۴ با چه نتیجه‌ای پیروز شد؟",o:["۱-۰","۲-۱","۳-۱","۲-۰"],a:1},
-{q:"کدام بازیکن در فینال جام حذفی ۲۰۲۴ گل دوم یونایتد را زد؟",o:["کوبی ماینو","برونو فرناندز","گارناچو","مک‌تومینای"],a:0},
-{q:"تدی شرینگهام در فینال ۱۹۹۹ چه نقشی داشت؟",o:["گل تساوی را زد","دروازه‌بان بود","کاپیتان بود","اخراج شد"],a:0},
-{q:"کدام بازیکن از ستارگان مشهور نسل طلایی یونایتد در کنار رونالدو و رونی بود؟",o:["پارک جی‌سونگ","آرون رمزی","استیون جرارد","فرانک لمپارد"],a:0},
-{q:"رقیب سنتی منچستریونایتد در شهر منچستر کدام تیم است؟",o:["لیورپول","منچسترسیتی","آرسنال","اورتون"],a:1},
-{q:"در فینال لیگ قهرمانان ۲۰۰۸، ضربات پنالتی با چه نتیجه‌ای به سود یونایتد تمام شد؟",o:["۴-۳","۵-۴","۶-۵","۳-۲"],a:2},
-{q:"کدام بازیکن یونایتد در فینال ۱۹۹۹ گل تساوی را به ثمر رساند؟",o:["پل اسکولز","تدی شرینگهام","دیوید بکام","اندی کول"],a:1},
-{q:"لقب تیم جوان منچستریونایتد در دوران مت بازبی چه بود؟",o:["باسبی بیبز","گلدن بویز","رد استارز","یونایتد کینگز"],a:0}
-];
-
-const $=id=>document.getElementById(id);
-const toFa=n=>Number(n).toLocaleString("fa-IR");
-let quiz=[],index=0,score=0,correct=0,player="",startedAt=0,deadline=0,tick=null,advance=null,locked=false,finished=false;
-
-function screen(id){document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});}
-function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
-function setConnection(msg,color){$("connectionStatus").textContent=msg;if(color)$("connectionStatus").style.color=color;}
-
-async function leaderboard(target){
- const el=$(target);
- if(!client){el.innerHTML='<div class="empty">اتصال دیتابیس هنوز تنظیم نشده است.</div>';return;}
- try{
-  const {data,error}=await client.from("quiz_results").select("player_name,score,duration_seconds").order("score",{ascending:false}).order("duration_seconds",{ascending:true}).limit(3);
-  if(error)throw error;
-  if(!data?.length){el.innerHTML='<div class="empty">هنوز نتیجه‌ای ثبت نشده است.</div>';return;}
-  el.innerHTML="";
-  data.forEach((r,i)=>{
-   const row=document.createElement("div");row.className="board-row";
-   const rank=document.createElement("div");rank.className="rank";rank.textContent=["🥇","🥈","🥉"][i];
-   const name=document.createElement("strong");name.textContent=r.player_name;
-   const points=document.createElement("div");points.className="board-points";points.textContent=toFa(r.score)+" امتیاز";
-   const time=document.createElement("div");time.className="board-time";time.textContent=toFa(r.duration_seconds)+" ثانیه";
-   row.append(rank,name,points,time);el.append(row);
-  });
- }catch(e){console.error(e);el.innerHTML='<div class="empty">دریافت جدول ناموفق بود. تنظیمات دیتابیس را بررسی کن.</div>';}
-}
-async function checkConnection(){
- if(!client){setConnection("کلید Publishable را در کد وارد کن.","#e8c77a");return;}
- try{const {error}=await client.from("quiz_results").select("id").limit(1);if(error)throw error;setConnection("اتصال به جدول امتیازات برقرار است ✓","#5fe0a2");}
- catch(e){console.error(e);setConnection("اتصال برقرار نشد؛ ابتدا جدول و دسترسی‌های Supabase را بساز.","#ff697b");}
-}
-function begin(){
- player=$("playerName").value.trim().replace(/\s+/g," ");
- if(player.length<2){alert("نام و نام خانوادگی را وارد کن.");return;}
- if(!client){alert("ابتدا Publishable Key پروژه Supabase را در کد قرار بده.");return;}
- $("startBtn").disabled=true;
- quiz=shuffle(QUESTIONS).map(q=>{const opts=shuffle(q.o.map((text,i)=>({text,correct:i===q.a})));return {...q,opts,answer:opts.findIndex(x=>x.correct)};});
- index=0;score=0;correct=0;finished=false;startedAt=Date.now();
- $("score").textContent=toFa(0);screen("quiz");renderQuestion();
-}
-function renderQuestion(){
- clearInterval(tick);clearTimeout(advance);locked=false;
- const q=quiz[index];
- $("qCounter").textContent=`سؤال ${toFa(index+1)} از ۴۰`;
- $("qPercent").textContent=toFa(Math.round((index+1)/40*100))+"٪";
- $("progressBar").style.width=((index+1)/40*100)+"%";
- $("qIndex").textContent=`QUESTION ${String(index+1).padStart(2,"0")} / 40`;
- $("questionText").textContent=q.q;$("feedback").textContent="یک گزینه را انتخاب کن.";
- $("feedback").style.color="var(--muted)";
- const labels=["الف","ب","ج","د"],box=$("answers");box.innerHTML="";
- q.opts.forEach((opt,i)=>{
-  const b=document.createElement("button");b.className="answer";
-  const l=document.createElement("span");l.className="letter";l.textContent=labels[i];
-  const t=document.createElement("span");t.textContent=opt.text;
-  b.append(l,t);b.addEventListener("click",()=>choose(i));box.append(b);
- });
- deadline=Date.now()+10000;updateTimer();
- tick=setInterval(()=>{
-  const remaining=Math.max(0,deadline-Date.now());
-  updateTimer(remaining);
-  if(remaining<=0){clearInterval(tick);if(!locked)timeExpired();}
- },80);
-}
-function updateTimer(ms=deadline-Date.now()){
- const sec=Math.max(0,Math.ceil(ms/1000)),deg=Math.max(0,Math.min(360,ms/10000*360));
- $("seconds").textContent=toFa(sec);
- $("timer").style.background=`conic-gradient(var(--red2) ${deg}deg,#ffffff18 ${deg}deg)`;
- $("timer").classList.toggle("danger",sec<=3);
-}
-function choose(i){
- if(locked)return;locked=true;clearInterval(tick);
- const q=quiz[index],buttons=[...$("answers").children];buttons.forEach(b=>b.disabled=true);
- if(i===q.answer){correct++;score+=10;buttons[i].classList.add("correct");$("feedback").textContent="پاسخ درست بود؛ ۱۰ امتیاز گرفتی."; $("feedback").style.color="var(--green)";}
- else{buttons[i].classList.add("incorrect");buttons[q.answer].classList.add("correct");$("feedback").textContent="پاسخ اشتباه بود؛ امتیازی دریافت نکردی."; $("feedback").style.color="var(--red2)";}
- $("score").textContent=toFa(score);advance=setTimeout(next,650);
-}
-function timeExpired(){
- if(locked)return;locked=true;
- const buttons=[...$("answers").children];buttons.forEach(b=>b.disabled=true);
- buttons[quiz[index].answer].classList.add("correct");
- $("feedback").textContent="زمان این سؤال تمام شد."; $("feedback").style.color="var(--red2)";
- advance=setTimeout(next,650);
-}
-function next(){if(index<quiz.length-1){index++;renderQuestion();}else complete();}
-async function complete(){
- clearInterval(tick);clearTimeout(advance);if(finished)return;finished=true;
- const duration=Math.max(1,Math.round((Date.now()-startedAt)/1000)),wrong=40-correct;
- $("finalScore").textContent=toFa(score);$("correctCount").textContent=toFa(correct);$("wrongCount").textContent=toFa(wrong);$("accuracy").textContent=toFa(Math.round(correct/40*100))+"٪";
- screen("result");$("saveStatus").textContent="در حال ثبت نتیجه...";
- try{
-  const {error}=await client.from("quiz_results").insert({player_name:player,score,correct_count:correct,duration_seconds:duration});
-  if(error)throw error;
-  $("saveStatus").textContent="نتیجه با موفقیت در جدول ثبت شد ✓";$("saveStatus").style.color="var(--green)";
- }catch(e){console.error(e);$("saveStatus").textContent="ثبت نتیجه ناموفق بود؛ اتصال و سیاست‌های جدول را بررسی کن.";$("saveStatus").style.color="var(--red2)";}
- await leaderboard("resultBoard");
-}
-$("startBtn").addEventListener("click",begin);
-$("playerName").addEventListener("keydown",e=>{if(e.key==="Enter")begin();});
-// جلوگیری از برگشت مرورگر در حین آزمون؛ این کار مانع تقلب حرفه‌ای نمی‌شود.
-history.replaceState({page:"home"},"",location.pathname+location.search);
-window.addEventListener("popstate",()=>{if($("quiz").classList.contains("active"))history.pushState({page:"quiz"},"","#quiz");});
-checkConnection();leaderboard("homeBoard");
+const client = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const toFa = n => Number(n ?? 0).toLocaleString("fa-IR");
+let attemptId=null, accessToken=null, position=1, score=0, correct=0, wrong=0;
+let deadline=0, tick=null, locked=false, finished=false;
+function screen(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');window.scrollTo({top:0,behavior:'smooth'});}
+function setConnection(msg,color){$('connectionStatus').textContent=msg;if(color)$('connectionStatus').style.color=color;}
+function showError(err){alert(err?.message || 'ارتباط با سرور ناموفق بود. دوباره تلاش کن.');}
+async function rpc(name,args={}){const {data,error}=await client.rpc(name,args);if(error)throw error;return data;}
+async function leaderboard(target){const el=$(target);try{const rows=await rpc('united_leaderboard');if(!rows?.length){el.innerHTML='<div class="empty">هنوز نتیجه‌ای ثبت نشده است.</div>';return;}el.innerHTML='';rows.forEach((r,i)=>{const row=document.createElement('div');row.className='board-row';const rank=document.createElement('div');rank.className='rank';rank.textContent=['🥇','🥈','🥉','۴','۵'][i];const name=document.createElement('strong');name.textContent=r.player_name;const pts=document.createElement('div');pts.className='board-points';pts.textContent=toFa(r.score)+' امتیاز';const tm=document.createElement('div');tm.className='board-time';tm.textContent=toFa(r.duration_seconds)+' ثانیه';row.append(rank,name,pts,tm);el.append(row);});}catch(e){console.error(e);el.innerHTML='<div class="empty">دریافت جدول امتیازات ناموفق بود.</div>';}}
+async function checkConnection(){try{const s=await rpc('united_contest_status');if(!s?.ends_at){setConnection('مسابقه هنوز زمان پایان مشخصی ندارد.','#e8c77a');$('startBtn').disabled=true;}else if(s.ended){setConnection('مهلت مسابقه به پایان رسیده است.','#ff697b');$('startBtn').disabled=true;$('answerKeySection').style.display='block';await loadAnswerKey();}else{setConnection('اتصال برقرار است؛ ثبت‌نام مسابقه فعال است ✓','#5fe0a2');}}catch(e){console.error(e);setConnection('ارتباط با سامانه برقرار نشد.','#ff697b');}}
+async function loadAnswerKey(){try{const rows=await rpc('united_answer_key');const board=$('answerKeyBoard');board.innerHTML='';rows.forEach((item,i)=>{const row=document.createElement('div');row.className='board-row';row.style.gridTemplateColumns='55px 1fr';const num=document.createElement('div');num.className='rank';num.textContent=toFa(i+1);const content=document.createElement('div');content.style.lineHeight='2';const q=document.createElement('strong');q.textContent=item.question;const a=document.createElement('div');a.style.color='var(--green)';a.textContent='پاسخ صحیح: '+item.correct_answer;content.append(q,a);row.append(num,content);board.append(row);});}catch(e){console.error(e);$('answerKeyBoard').innerHTML='<div class="empty">دریافت پاسخ‌نامه ناموفق بود.</div>';}}
+async function begin(){if(!client){alert('اتصال Supabase در دسترس نیست.');return;}const first=$('firstName').value.trim(),last=$('lastName').value.trim(),rubika=$('rubikaId').value.trim();if(first.length<2||last.length<2||!rubika){alert('نام، نام خانوادگی و آیدی روبیکا را کامل وارد کن.');return;}$('startBtn').disabled=true;try{const data=await rpc('united_register_start',{p_first_name:first,p_last_name:last,p_rubika_id:rubika});attemptId=data.attempt_id;accessToken=data.access_token;sessionStorage.setItem('united_attempt_id',attemptId);sessionStorage.setItem('united_access_token',accessToken);position=data.question.position;score=data.score;correct=data.correct_count;wrong=data.wrong_count;screen('quiz');renderQuestion(data);}catch(e){showError(e);$('startBtn').disabled=false;}}
+function renderQuestion(data){clearInterval(tick);locked=false;finished=false;const q=data.question;position=q.position;$('score').textContent=toFa(data.score);$('qCounter').textContent=`سؤال ${toFa(position)} از ۴۰`;$('qPercent').textContent=toFa(Math.round(position/40*100))+'٪';$('progressBar').style.width=(position/40*100)+'%';$('qIndex').textContent=`QUESTION ${String(position).padStart(2,'0')} / 40`;$('questionText').textContent=q.question;$('feedback').textContent='یک گزینه را انتخاب کن.';$('feedback').style.color='var(--muted)';const box=$('answers');box.innerHTML='';const labels=['الف','ب','ج','د'];q.options.forEach((text,i)=>{const b=document.createElement('button');b.className='answer';const l=document.createElement('span');l.className='letter';l.textContent=labels[i];const t=document.createElement('span');t.textContent=text;b.append(l,t);b.addEventListener('click',()=>submit(i));box.append(b);});deadline=Date.now()+(Math.max(0,data.seconds_left??10)*1000);updateTimer();tick=setInterval(()=>{const left=Math.max(0,deadline-Date.now());updateTimer(left);if(left<=0){clearInterval(tick);submit(null,true);}},100);}
+function updateTimer(ms=deadline-Date.now()){const sec=Math.max(0,Math.ceil(ms/1000)),deg=Math.max(0,Math.min(360,ms/10000*360));$('seconds').textContent=toFa(sec);$('timer').style.background=`conic-gradient(var(--red2) ${deg}deg,#ffffff18 ${deg}deg)`;$('timer').classList.toggle('danger',sec<=3);}
+async function submit(choice,timeout=false){if(locked||finished)return;locked=true;clearInterval(tick);[...$('answers').children].forEach(b=>b.disabled=true);$('feedback').textContent=timeout?'زمان پاسخ‌گویی تمام شد.':'پاسخ ثبت شد.';$('feedback').style.color='var(--muted)';try{const data=await rpc('united_submit_answer',{p_attempt_id:attemptId,p_token:accessToken,p_position:position,p_selected_option:choice});score=data.score;correct=data.correct_count;wrong=data.wrong_count;$('score').textContent=toFa(score);if(data.status==='completed'){showResult(data);return;}setTimeout(()=>renderQuestion(data),250);}catch(e){console.error(e);try{const recovered=await rpc('united_get_attempt',{p_attempt_id:attemptId,p_token:accessToken});if(recovered.status==='completed'){showResult(recovered);return;}renderQuestion(recovered);}catch(recoveryError){$('feedback').textContent='ارتباط قطع شد؛ صفحه را دوباره بارگذاری کن تا ادامه مسابقه بازیابی شود.';$('feedback').style.color='var(--red2)';locked=true;}}}
+function showResult(data){finished=true;clearInterval(tick);$('finalScore').textContent=toFa(data.score);$('correctCount').textContent=toFa(data.correct_count);$('wrongCount').textContent=toFa(data.wrong_count);$('accuracy').textContent=toFa(Math.round(data.correct_count/40*100))+'٪';$('saveStatus').textContent='نتیجه با موفقیت ثبت شد.';$('saveStatus').style.color='var(--green)';screen('result');leaderboard('resultBoard');}
+async function resumeAttempt(){const id=sessionStorage.getItem('united_attempt_id'),token=sessionStorage.getItem('united_access_token');if(!id||!token)return;try{attemptId=id;accessToken=token;const data=await rpc('united_get_attempt',{p_attempt_id:id,p_token:token});if(data.status==='completed'){showResult(data);}else{position=data.position;score=data.score;correct=data.correct_count;wrong=data.wrong_count;screen('quiz');renderQuestion(data);}}catch(e){console.warn('resume unavailable',e);sessionStorage.removeItem('united_attempt_id');sessionStorage.removeItem('united_access_token');}}
+$('startBtn').addEventListener('click',begin);['firstName','lastName','rubikaId'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')begin();}));
+history.replaceState({page:'home'},'',location.pathname+location.search);window.addEventListener('popstate',()=>{if($('quiz').classList.contains('active'))history.pushState({page:'quiz'},'','#quiz');});
+checkConnection();leaderboard('homeBoard');resumeAttempt();
 </script>
 </body>
 </html>
